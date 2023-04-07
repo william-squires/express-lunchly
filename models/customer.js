@@ -3,14 +3,16 @@
 /** Customer for Lunchly */
 
 const db = require("../db");
+const { BadRequestError } = require("../expressError");
 const Reservation = require("./reservation");
 
 /** Customer of the restaurant. */
 
 class Customer {
-  constructor({ id, firstName, lastName, phone, notes }) {
+  constructor({ id, firstName, middleName, lastName, phone, notes }) {
     this.id = id;
     this.firstName = firstName;
+    this.middleName = middleName;
     this.lastName = lastName;
     this.phone = phone;
     this.notes = notes;
@@ -22,6 +24,7 @@ class Customer {
     const results = await db.query(
       `SELECT id,
                   first_name AS "firstName",
+                  middle_name AS "middleName",
                   last_name  AS "lastName",
                   phone,
                   notes
@@ -37,6 +40,7 @@ class Customer {
     const results = await db.query(
       `SELECT id,
                   first_name AS "firstName",
+                  middle_name AS "middleName",
                   last_name  AS "lastName",
                   phone,
                   notes
@@ -63,11 +67,13 @@ class Customer {
     const results = await db.query(
       `SELECT id,
         first_name AS "firstName",
+        middle_name AS "middleName",
         last_name  AS "lastName",
         phone,
         notes
       FROM customers
-      WHERE CONCAT(first_name, ' ', last_name) ILIKE $1
+      WHERE CONCAT(first_name, ' ', middle_name, ' ', last_name) ILIKE $1
+        OR CONCAT(first_name, ' ', last_name) ILIKE $1
       ORDER BY last_name, first_name`, [`%${searchTerm}%`]
     );
     return results.rows.map(c => new Customer(c));
@@ -80,6 +86,7 @@ class Customer {
     const results = await db.query(
       `SELECT c.id,
       first_name AS "firstName",
+      middle_name AS "middleName",
       last_name  AS "lastName",
       phone,
       c.notes
@@ -99,15 +106,17 @@ class Customer {
     return await Reservation.getReservationsForCustomer(this.id);
   }
 
+
+
   /** save this customer. */
 
   async save() {
     if (this.id === undefined) {
       const result = await db.query(
-        `INSERT INTO customers (first_name, last_name, phone, notes)
-             VALUES ($1, $2, $3, $4)
+        `INSERT INTO customers (first_name, last_name, middle_name, phone, notes)
+             VALUES ($1, $2, $3, $4, $5)
              RETURNING id`,
-        [this.firstName, this.lastName, this.phone, this.notes],
+        [this.firstName, this.middleName, this.lastName, this.phone, this.notes],
       );
       this.id = result.rows[0].id;
     } else {
@@ -115,6 +124,7 @@ class Customer {
         `UPDATE customers
              SET first_name=$1,
                  last_name=$2,
+                 middle_name=$6,
                  phone=$3,
                  notes=$4
              WHERE id = $5`, [
@@ -123,15 +133,61 @@ class Customer {
         this.phone,
         this.notes,
         this.id,
+        this.middleName
       ],
       );
     }
   }
 
+
+  get firstName() {
+    return this._firstName
+  }
+
+  /**set first name. throw error if none is given */
+  set firstName(name) {
+    if (!name) {
+      throw new BadRequestError("First name is requried")
+    }
+    this._firstName = name;
+  }
+
+  get lastName() {
+    return this._lastName
+  }
+
+    /**set last name. throw error if none is given */
+  set lastName(name) {
+    if (!name) {
+      throw new BadRequestError("Last name is requried")
+    }
+    this._lastName = name;
+  }
+
   /** Returns customer's full name: 'firstName lastName' */
   get fullName() {
-    return `${this.firstName} ${this.lastName}`;
+    return `${this.firstName} ${this.middleName} ${this.lastName}`;
   }
+
+  // get phone() {
+  //   return this._phone;
+  // }
+
+  // set phone(phoneNumber) {
+  //   if (phoneNumber) {
+  //     // make sure it is in a valid format
+  //     // (nnn)-nnn-nnnn
+  //     if (regex.test(phoneNumber)) {
+
+  //     }
+  //     else {
+  //       throw BadRequestError("Phone number must be in format (###)-###-####")
+  //     }
+  //   }
+  //   else {
+  //     this._phone = "";
+  //   }
+  // }
 }
 
 module.exports = Customer;

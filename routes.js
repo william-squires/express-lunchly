@@ -17,12 +17,15 @@ router.get("/", async function (req, res, next) {
   let customers;
   if (resp) {
     customers = await Customer.getCustomersByName(resp);
-
   }
   else {
     customers = await Customer.all();
   }
 
+  for (const customer of customers) {
+    const reservations = await Reservation.getReservationsForCustomer(customer.id);
+    customer.reservation = reservations[0];
+  }
   return res.render("customer_list.html", { customers });
 });
 
@@ -30,6 +33,12 @@ router.get("/", async function (req, res, next) {
 
 router.get("/top-ten", async function (req, res, next) {
   const customers = await Customer.getBestCustomers()
+
+  for (const customer of customers) {
+    const reservations = await Reservation.getReservationsForCustomer(customer.id);
+    customer.reservation = reservations[0];
+  }
+
   return res.render("customer_list.html", { customers });
 });
 
@@ -46,8 +55,8 @@ router.post("/add/", async function (req, res, next) {
   if (req.body === undefined) {
     throw new BadRequestError();
   }
-  const { firstName, lastName, phone, notes } = req.body;
-  const customer = new Customer({ firstName, lastName, phone, notes });
+  const { firstName, lastName, middleName, phone, notes } = req.body;
+  const customer = new Customer({ firstName, lastName, middleName, phone, notes });
   await customer.save();
 
   return res.redirect(`/${customer.id}/`);
@@ -80,6 +89,7 @@ router.post("/:id/edit/", async function (req, res, next) {
   const customer = await Customer.get(req.params.id);
   customer.firstName = req.body.firstName;
   customer.lastName = req.body.lastName;
+  customer.middleName = req.body.middleName;
   customer.phone = req.body.phone;
   customer.notes = req.body.notes;
   await customer.save();
@@ -95,7 +105,7 @@ router.post("/:id/add-reservation/", async function (req, res, next) {
   }
  
   const customerId = req.params.id;
-  const startAt = new Date(req.body.startAt);
+  const startAt = req.body.startAt;
   const numGuests = req.body.numGuests;
   const notes = req.body.notes;
 
@@ -106,6 +116,7 @@ router.post("/:id/add-reservation/", async function (req, res, next) {
     notes,
   });
   await reservation.save();
+
 
   return res.redirect(`/${customerId}/`);
 });

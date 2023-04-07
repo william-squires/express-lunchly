@@ -12,6 +12,16 @@
         <a href="/{{ customer.id }}/">
           {{ customer.fullName }}
         </a>
+        {% if customer.reservation %}
+        <ul>
+            <li>
+              <b>{{ customer.reservation.getFormattedStartAt() }}</b>
+              for {{ customer.reservation.numGuests }}
+            </li>
+        </ul>
+      {% else %}
+        <p>None!</p>
+      {% endif %}
       </li>
     {% endfor %}
   </ul>
