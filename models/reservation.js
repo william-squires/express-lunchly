@@ -72,7 +72,6 @@ class Reservation {
 
   set numGuests(numGuests){
     if (numGuests < 1) {
-      console.log('This is a problem');
       throw new BadRequestError("# of Guests must be at least 1");
     }
     this._numGuests = numGuests; 
