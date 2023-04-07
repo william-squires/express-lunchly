@@ -41,7 +41,7 @@ class Reservation {
   }
 
 
-
+/** Save this reservation. */
   async save() {
     if (this.id === undefined) {
       const result = await db.query(
@@ -53,7 +53,7 @@ class Reservation {
       this.id = result.rows[0].id;
     } else {
       await db.query(
-            `UPDATE customers
+            `UPDATE reservations
              SET customer_id=$1,
                  start_at=$2,
                  num_guests=$3,

@@ -5,8 +5,6 @@
 const db = require("../db");
 const Reservation = require("./reservation");
 
-const NUM_BEST_CUSTOMERS = 10;
-
 /** Customer of the restaurant. */
 
 class Customer {
@@ -69,7 +67,7 @@ class Customer {
         phone,
         notes
       FROM customers
-      WHERE first_name ILIKE $1 or last_name ILIKE $1
+      WHERE CONCAT(first_name, ' ', last_name) ILIKE $1
       ORDER BY last_name, first_name`, [`%${searchTerm}%`]
     );
     return results.rows.map(c => new Customer(c));
@@ -88,7 +86,7 @@ class Customer {
     FROM customers AS c
     INNER JOIN reservations  AS r
       ON c.id = r.customer_id
-    GROUP BY c.id, first_name, last_name, phone, c.notes
+    GROUP BY c.id
     ORDER BY count(r.id) DESC, first_name, last_name
     LIMIT 10`
     );

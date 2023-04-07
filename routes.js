@@ -13,16 +13,17 @@ const router = new express.Router();
 /** Homepage: show list of customers. */
 
 router.get("/", async function (req, res, next) {
-  const resp = req.query.search
+  const resp = req.query.search;
+  let customers;
   if (resp) {
-    const customers = await Customer.getCustomersByName(resp);
-    return res.render("customer_list.html", { customers });
+    customers = await Customer.getCustomersByName(resp);
 
   }
   else {
-    const customers = await Customer.all();
-    return res.render("customer_list.html", { customers });
+    customers = await Customer.all();
   }
+
+  return res.render("customer_list.html", { customers });
 });
 
 /** show list of top ten customers by number of reservations */
@@ -93,11 +94,15 @@ router.post("/:id/add-reservation/", async function (req, res, next) {
     throw new BadRequestError();
   }
  
-  const errors = [];
   const customerId = req.params.id;
   const startAt = new Date(req.body.startAt);
   const numGuests = req.body.numGuests;
   const notes = req.body.notes;
+
+  if (numGuests < 1) {
+    throw new BadRequestError("# of Guests must be at least 1");
+  }
+
   const reservation = new Reservation({
     customerId,
     startAt,
