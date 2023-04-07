@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}{{ customer.getFullName() }}{% endblock %}
+{% block title %}{{ customer.fullName }}{% endblock %}
 
 {% block content %}
   
 
-  <h1>{{ customer.getFullName() }}</h1>
+  <h1>{{ customer.fullName }}</h1>
 
   <div class="row">
 
@@ -55,7 +55,7 @@
                  name="numGuests"
                  type="number"
                  id="num-guests"
-                 min="1">
+                 >
         </div>
         <div class="mb-3">
           <label for="notes">Notes:</label>

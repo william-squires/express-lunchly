@@ -99,10 +99,6 @@ router.post("/:id/add-reservation/", async function (req, res, next) {
   const numGuests = req.body.numGuests;
   const notes = req.body.notes;
 
-  if (numGuests < 1) {
-    throw new BadRequestError("# of Guests must be at least 1");
-  }
-
   const reservation = new Reservation({
     customerId,
     startAt,
