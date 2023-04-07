@@ -5,6 +5,8 @@
 const db = require("../db");
 const Reservation = require("./reservation");
 
+const NUM_BEST_CUSTOMERS = 10;
+
 /** Customer of the restaurant. */
 
 class Customer {
@@ -20,7 +22,7 @@ class Customer {
 
   static async all() {
     const results = await db.query(
-          `SELECT id,
+      `SELECT id,
                   first_name AS "firstName",
                   last_name  AS "lastName",
                   phone,
@@ -35,14 +37,14 @@ class Customer {
 
   static async get(id) {
     const results = await db.query(
-          `SELECT id,
+      `SELECT id,
                   first_name AS "firstName",
                   last_name  AS "lastName",
                   phone,
                   notes
            FROM customers
            WHERE id = $1`,
-        [id],
+      [id],
     );
 
     const customer = results.rows[0];
@@ -56,6 +58,43 @@ class Customer {
     return new Customer(customer);
   }
 
+  /** given search term, return all customers with that name
+   * [Customer,...]
+   */
+  static async getCustomersByName(searchTerm) {
+    const results = await db.query(
+      `SELECT id,
+        first_name AS "firstName",
+        last_name  AS "lastName",
+        phone,
+        notes
+      FROM customers
+      WHERE first_name ILIKE $1 or last_name ILIKE $1
+      ORDER BY last_name, first_name`, [`%${searchTerm}%`]
+    );
+    return results.rows.map(c => new Customer(c));
+  }
+
+  /** returns the 10 customers who have made the most reservations:
+   * [Customer, ...]
+   */
+  static async getBestCustomers() {
+    const results = await db.query(
+      `SELECT c.id,
+      first_name AS "firstName",
+      last_name  AS "lastName",
+      phone,
+      c.notes
+    FROM customers AS c
+    INNER JOIN reservations  AS r
+      ON c.id = r.customer_id
+    GROUP BY c.id, first_name, last_name, phone, c.notes
+    ORDER BY count(r.id) DESC, first_name, last_name
+    LIMIT 10`
+    );
+    return results.rows.map(c => new Customer(c));
+  }
+
   /** get all reservations for this customer. */
 
   async getReservations() {
@@ -67,28 +106,33 @@ class Customer {
   async save() {
     if (this.id === undefined) {
       const result = await db.query(
-            `INSERT INTO customers (first_name, last_name, phone, notes)
+        `INSERT INTO customers (first_name, last_name, phone, notes)
              VALUES ($1, $2, $3, $4)
              RETURNING id`,
-          [this.firstName, this.lastName, this.phone, this.notes],
+        [this.firstName, this.lastName, this.phone, this.notes],
       );
       this.id = result.rows[0].id;
     } else {
       await db.query(
-            `UPDATE customers
+        `UPDATE customers
              SET first_name=$1,
                  last_name=$2,
                  phone=$3,
                  notes=$4
              WHERE id = $5`, [
-            this.firstName,
-            this.lastName,
-            this.phone,
-            this.notes,
-            this.id,
-          ],
+        this.firstName,
+        this.lastName,
+        this.phone,
+        this.notes,
+        this.id,
+      ],
       );
     }
+  }
+
+  /** Returns customer's full name: 'firstName lastName' */
+  getFullName() {
+    return `${this.firstName} ${this.lastName}`;
   }
 }
 
